@@ -62,10 +62,10 @@ This is an early public release — expect a few bugs along the way:
 
 | Type | Description |
 |------|--------------|
-| ⚠️ Connectivity | Occasional **WebSocket disconnects** requiring manual reconnect |
-| 📊 UI | Scoreboard **sometimes fails to display** after certain rounds |
-| 🚫 Game Flow | Joining **midway through a game** can cause crashes |
-| 🕐 Timing | Rare race conditions when transferring card packs or syncing answers |
+| 📊 UI | The scoreboard may still occasionally fail to display after some rounds. |
+| 🚫 Game Flow | Players joining mid-game can still cause instability or crashes. |
+| 📱 Mobile | Some mobile browsers may require a refresh to reconnect after idle timeouts. |
+| 🎵 Game Music | On Windows, if the game is exited abruptly mid round (not via the end game buttons) then the audio continues to play. Only way to stop at current is via task manager. macOS does not suffer this issue |
 
 ---
 
