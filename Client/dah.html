@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Devices Against Humanity</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Use a modern, readable font */
+        html, body { /* MODIFIED */
+            font-family: 'Inter', sans-serif;
+            height: 100%; /* MODIFIED */
+            width: 100%; /* MODIFIED */
+            overflow: hidden;
+            margin: 0; /* ADDED */
+            padding: 0; /* ADDED */
+        }
+
+        /* Animated gradient background */
+        .gradient-bg {
+            background: linear-gradient(-45deg, #1e1b4b, #312e81, #4f46e5, #3b0764);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Custom class for selected cards */
+        .selected-card {
+            transform: translateY(-12px) scale(1.05) !important;
+            box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.4), 0 4px 6px -2px rgba(34, 197, 94, 0.2);
+            border: 2px solid #22c55e;
+            background-color: #166534 !important;
+            color: white !important;
+        }
+
+        /* Hide scrollbar for card wrapper */
+        .cards-wrapper::-webkit-scrollbar {
+            display: none;
+        }
+        .cards-wrapper {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        /* Ensure inputs are visible */
+        input::placeholder {
+            color: #a5b4fc;
+        }
+    </style>
+</head>
+<body class="gradient-bg text-white overflow-hidden">
+
+    <!-- 
+      Login Screen:
+      This is the initial view the user sees.
+    -->
+    <div id="loginScreen" class="h-full w-full flex flex-col items-center justify-center p-4 transition-opacity duration-500 ease-in-out">
+        <h1 class="text-4xl md:text-6xl font-bold text-white mb-8 text-center" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.5);">Devices Against Humanity</h1>
+        
+        <div class="bg-white/10 backdrop-blur-md p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <form id="JoinGameForm" class="space-y-4">
+                <div>
+                    <label for="gameCode" class="block text-sm font-medium text-indigo-100">Game Code:</label>
+                    <input type="text" id="gameCode" name="gameCode" required class="mt-1 block w-full bg-indigo-900/50 border border-indigo-400 rounded-lg py-3 px-4 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition duration-200">
+                    <div id="gameCodeError" class="text-red-400 text-sm mt-1 h-5"></div>
+                </div>
+
+                <div>
+                    <label for="username" class="block text-sm font-medium text-indigo-100">Username:</label>
+                    <input type="text" id="username" name="username" required class="mt-1 block w-full bg-indigo-900/50 border border-indigo-400 rounded-lg py-3 px-4 text-white placeholder-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-transparent transition duration-200">
+                    <div id="usernameError" class="text-red-400 text-sm mt-1 h-5"></div>
+                </div>
+
+                <button id="joinGameButton" type="submit" class="w-full bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:ring-opacity-50 transform transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Join Game
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 
+      Game Screen:
+      This is hidden by default and shown after a successful join.
+      It contains all the in-game UI elements.
+    -->
+    <div id="gameScreen" class="h-full w-full flex flex-col hidden transition-opacity duration-500 ease-in-out">
+        
+        <!-- Header: Displays username and game code -->
+        <header class="bg-black/20 backdrop-blur-sm p-3 shadow-md">
+            <!-- On mobile (default) center the username. On desktop (md) justify-between -->
+            <div class="container mx-auto flex justify-center md:justify-between items-center text-sm md:text-base">
+                <h3 id="usernameDisplay" class="font-semibold">Username:</h3>
+                <!-- Hide game code on mobile (hidden), show on desktop (md:block) -->
+                <h3 id="gameCodeDisplay" class="font-mono hidden md:block">Game Code:</h3>
+            </div>
+        </header>
+
+        <!-- Main Content Area: Holds waiting/playing views -->
+        <main class="flex-1 flex flex-col items-center justify-center relative overflow-hidden p-4">
+
+            <!-- Waiting View -->
+            <div id="waitingView" class="text-center">
+                <h2 id="waitingTitle" class="text-3xl md:text-4xl font-bold mb-4">Waiting for Game to Start</h2>
+                <h3 id="infoMessage" class="text-xl md:text-2xl text-indigo-200">See your username on the screen</h3>
+                <!-- Simple loading spinner -->
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mt-8"></div>
+            </div>
+
+            <!-- Playing View (Card Carousel) -->
+            <div id="playingView" class="hidden w-full h-full flex flex-col items-center justify-center">
+                <h2 id="requiredAnswers" class="text-lg md:text-xl font-semibold text-indigo-200 mb-4 absolute top-4">Cards Required: Loading...</h2>
+                
+                <div id="cardContainer" class="w-full h-full flex items-center justify-center perspective-1000">
+                    <div id="cardsWrapper" class="cards-wrapper flex items-center w-full max-w-7xl h-full overflow-x-auto cursor-grab active:cursor-grabbing select-none" style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;">
+                        <div id="cardsInner" class="flex p-10 space-x-5 md:space-x-8">
+                            <!-- White cards will be injected here by JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="submitContainer" class="hidden absolute bottom-20 md:bottom-24">
+                    <button id="submitCardsButton" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-lg hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-300 focus:ring-opacity-50 transform transition-all duration-200 hover:scale-105">
+                        Submit Cards
+                    </button>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer: Displays score -->
+        <footer class="bg-black/20 backdrop-blur-sm p-3 shadow-md">
+            <div class="container mx-auto text-center">
+                <h3 id="scoreDisplay" class="text-lg md:text-xl font-bold">Score: 0</h3>
+            </div>
+        </footer>
+    </div>
+
+
+    <script type="module">
+        let socket;
+        let whiteCards = [];
+        let answerCards = [];
+        let playerCards = [];
+        let requiredAnswers = 0;
+        let voter = false;
+        let localGameState = "waiting";
+        let won = false;
+
+        // --- DOM Elements ---
+        // Login Screen
+        const loginScreen = document.getElementById("loginScreen");
+        const joinGameForm = document.getElementById("JoinGameForm");
+        const gameCodeInput = document.getElementById("gameCode");
+        const usernameInput = document.getElementById("username");
+        const gameCodeError = document.getElementById("gameCodeError");
+        const usernameError = document.getElementById("usernameError");
+        const joinGameButton = document.getElementById("joinGameButton");
+
+        // Game Screen
+        const gameScreen = document.getElementById("gameScreen");
+        const usernameDisplay = document.getElementById("usernameDisplay");
+        const gameCodeDisplay = document.getElementById("gameCodeDisplay");
+        const scoreDisplay = document.getElementById("scoreDisplay");
+
+        // Main Content Views
+        const waitingView = document.getElementById("waitingView");
+        const waitingTitle = document.getElementById("waitingTitle");
+        const infoMessage = document.getElementById("infoMessage");
+        
+        const playingView = document.getElementById("playingView");
+        const requiredAnswersLabel = document.getElementById("requiredAnswers");
+        const cardContainer = document.getElementById("cardContainer");
+        const cardsWrapper = document.getElementById("cardsWrapper");
+        const cardsInner = document.getElementById("cardsInner");
+        const submitContainer = document.getElementById("submitContainer");
+        const submitCardsButton = document.getElementById("submitCardsButton");
+
+        // --- Initial State (Hide Game Screen) ---
+        // Handled by 'hidden' class in HTML
+        
+        // --- WebSocket & Server Communication ---
+
+        async function generateUniqueID() {
+            let clientID = "";
+            try {
+                let url = 'https://{serverURL}/uniqueID';
+                let response = await fetch(url);
+                let result = await response.json();
+                clientID = result[0];
+                sessionStorage.setItem("deviceID", clientID);
+                return clientID;
+            } catch (error) {
+                console.error("Failed to generate unique ID:", error);
+                // Fallback or error handling
+                gameCodeError.textContent = "Error connecting to server.";
+                return null;
+            }
+        }
+
+        async function sendMessageToServer(message, data = null) {
+            let retries = 0;
+            const maxRetries = 5;
+
+            while (retries < maxRetries) {
+                if (socket && socket.readyState === WebSocket.OPEN) {
+                    if (data) {
+                        const formattedMessage = `command: ${message.command}, gameCode: ${sessionStorage.getItem("gameCode")}, deviceID: ${sessionStorage.getItem("deviceID")}, agentType: client, username: ${sessionStorage.getItem("username")}, data: ${data}`;
+                        socket.send(formattedMessage);
+                        return;
+                    }
+                    const formattedMessage = `command: ${message.command}, gameCode: ${sessionStorage.getItem("gameCode")}, deviceID: ${sessionStorage.getItem("deviceID")}, agentType: client, username: ${sessionStorage.getItem("username")}`;
+                    socket.send(formattedMessage);
+                    return;
+                } else {
+                    retries++;
+                    console.warn(`WebSocket not open. Retry ${retries}/${maxRetries}...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+            console.error("Failed to send message after", maxRetries, "retries. WebSocket might be closed.");
+        }
+
+        async function connectWebSocket(gameCode, username) {
+            let deviceID = sessionStorage.getItem("deviceID");
+            if (!deviceID) {
+                deviceID = await generateUniqueID();
+                if (!deviceID) {
+                    console.error("Could not get device ID to connect WebSocket.");
+                    return;
+                }
+            }
+
+            let wsUrl = `wss://{serverURL}/ws/${deviceID}`;
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function (event) {
+                console.log("WebSocket connected.");
+                sendMessageToServer({ command: "setupWebsocket" });
+            };
+
+            socket.onmessage = function (event) {
+                try {
+                    let message = event.data;
+                    let parts = message.split(":");
+                    let command = parts[0];
+                    // Re-join the rest of the message in case data contains colons
+                    let data = parts.slice(1).join(":"); 
+                    
+                    console.log("Received message: " + message);
+
+                    if (command === "whiteCards") {
+                        insertWhiteCards(data);
+                    } else if (command === "changeGameState") {
+                        changeGameState(data);
+                    } else if (command === "answersRequired") {
+                        setRequiredAnswers(data);
+                    } else if (command === "answers") {
+                        insertAnswerCards(data);
+                    } else if (command === "updateScore") {
+                        won = true;
+                        let score = parseInt(sessionStorage.getItem("score") || 0) + 1;
+                        sessionStorage.setItem("score", score);
+                        scoreDisplay.textContent = "Score: " + score;
+                        
+                        // Show winning message
+                        showWaitingView("You won this round!", "Good luck next round!");
+                    } else if (command === "endGame") {
+                        // Show "Game Ended" message with 10-second countdown and redirect
+                        showWaitingView(
+                            "The Game Has Ended", 
+                            "Thanks for playing!", 
+                            false, 
+                            10, 
+                            "https://devicesagainsthumanity.bgodfrey.org"
+                        );
+                    }
+                } catch (error) {
+                    console.error("Error processing message:", error, event.data);
+                }
+            };
+
+            socket.onclose = function (event) {
+                console.log("WebSocket closed");
+                // Optionally show a reconnect message
+                showWaitingView("Connection Lost", "Please refresh to reconnect.", false);
+            };
+
+            socket.onerror = function(error) {
+                console.error("WebSocket Error:", error);
+            }
+        }
+
+        // --- Game Logic & UI Transitions ---
+
+        async function joinGame(event) {
+            event.preventDefault(); // Prevent form submission
+            gameCodeError.textContent = "";
+            usernameError.textContent = "";
+            joinGameButton.innerHTML = "Joining...";
+            joinGameButton.disabled = true;
+
+            var gameCode = gameCodeInput.value;
+            var username = usernameInput.value;
+            let url = 'https://{serverURL}/joinGame';
+            let data = { gameCode, username };
+
+            try {
+                // First, get a unique ID
+                await generateUniqueID();
+
+                let response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+
+                let result = await response.json();
+                if (result.status === "user added to game") {
+                    joinGameButton.innerHTML = "Connecting...";
+                    await connectWebSocket(gameCode, username);
+                    sessionStorage.setItem("gameCode", gameCode);
+                    sessionStorage.setItem("username", username);
+                    activateGameScreen();
+                } else {
+                    if (result.status === "game not found") {
+                        gameCodeError.textContent = "Game not found";
+                    }
+                    if (result.status === "user already exists") {
+                        usernameError.textContent = "Username already exists";
+                    }
+                    resetJoinButton();
+                }
+            } catch (error) {
+                console.error("Error joining game:", error);
+                gameCodeError.textContent = "Failed to join. Check console.";
+                resetJoinButton();
+            }
+        }
+
+        function resetJoinButton() {
+            joinGameButton.innerHTML = "Join Game";
+            joinGameButton.disabled = false;
+        }
+
+        function showWaitingView(title, message, showSpinner = true, countdownSeconds = 0, redirectUrl = null) {
+            waitingView.classList.remove("hidden");
+            playingView.classList.add("hidden");
+            
+            waitingTitle.textContent = title;
+            infoMessage.textContent = message;
+            
+            const spinner = waitingView.querySelector(".animate-spin");
+            if(spinner) spinner.style.display = showSpinner ? "block" : "none";
+
+            if (countdownSeconds > 0) {
+                let secondsLeft = countdownSeconds;
+                infoMessage.textContent = `${message} (Redirecting in ${secondsLeft}...)`;
+                
+                const countdownInterval = setInterval(() => {
+                    secondsLeft--;
+                    if (secondsLeft > 0) {
+                        infoMessage.textContent = `${message} (Redirecting in ${secondsLeft}...)`;
+                    } else {
+                        clearInterval(countdownInterval);
+                        infoMessage.textContent = "Redirecting now...";
+                        if (redirectUrl) {
+                            window.location.href = redirectUrl;
+                        }
+                    }
+                }, 1000);
+            }
+        }
+
+        function showPlayingView() {
+            waitingView.classList.add("hidden");
+            playingView.classList.remove("hidden");
+        }
+
+
+        async function activateGameScreen() {
+            // Fade out login screen
+            loginScreen.classList.add("opacity-0");
+            
+            setTimeout(async () => {
+                loginScreen.classList.add("hidden");
+                
+                // Set initial game info
+                var gameCode = sessionStorage.getItem("gameCode");
+                var username = sessionStorage.getItem("username");
+                gameCodeDisplay.textContent = "Game Code: " + gameCode;
+                usernameDisplay.textContent = "Username: " + username;
+                var score = 0;
+                sessionStorage.setItem("score", score);
+                scoreDisplay.textContent = "Score: " + score;
+
+                // Show game screen (defaulting to waiting view)
+                showWaitingView("Waiting for Game to Start", "See your username on the screen");
+                gameScreen.classList.remove("hidden");
+                gameScreen.classList.add("opacity-100");
+
+                // Request initial cards
+                let numCardsRequired = (10 - whiteCards.length);
+                await requestNewWhiteCards(numCardsRequired);
+            }, 500); // Wait for fade-out transition
+        }
+
+        async function requestNewWhiteCards(numCards = 10) {
+            if (numCards > 0) {
+                sendMessageToServer({ command: `getWhiteCards|${numCards}` });
+            }
+        }
+
+        async function insertWhiteCards(data) {
+            try {
+                let tempCards = JSON.parse(data);
+                for (let i = 0; i < tempCards.length; i++) {
+                    whiteCards.push(tempCards[i]);
+                }
+                console.log('White Cards:', whiteCards);
+            } catch(e) {
+                console.error("Failed to parse white cards:", e, data);
+            }
+        }
+
+        async function displayVoterScreen() {
+            showWaitingView("You are the voter!", "Waiting for other players to submit...");
+            voter = true;
+        }
+
+        async function changeGameState(data) {
+            console.log(`New game state: ${data}. Voter status: ${voter}`);
+            if (data === "playing") {
+                won = false;
+                if (voter) {
+                    // Voter just finished voting, now waiting
+                    showWaitingView("Waiting for next round...", "");
+                    return;
+                }
+                localGameState = "playing";
+                displayWhiteCards(whiteCards);
+                showPlayingView();
+            }
+            if (data === "waiting") {
+                localGameState = "waiting";
+                if(voter) {
+                    voter = false; // Reset voter status for next round
+                }
+                // Don't show "waiting" if we just won
+                if (!won) {
+                    showWaitingView("Waiting for next round...", "");
+                }
+            }
+            
+            // --- BUG FIX: Separated logic for 'voting-m' and 'voting-s' ---
+            if (data === "voting-m") {
+                // MULTI-VOTER logic: Everyone votes
+                localGameState = "voting-m";
+                displayWhiteCards(answerCards); // Show the answer cards
+                showPlayingView(); // Switch to the playing view
+                requiredAnswers = 1; // Each person picks one
+                updateUIAfterSelection(); // Update the UI
+            } 
+            else if (data === "voting-s") {
+                // SINGLE-VOTER logic: Only the 'voter' votes
+                localGameState = "voting-s";
+                if (voter) {
+                    // This client IS the single voter
+                    displayWhiteCards(answerCards);
+                    showPlayingView();
+                    requiredAnswers = 1; // Voter only picks one winner
+                    updateUIAfterSelection(); // Update UI for voter
+                } else {
+                    // This client is NOT the single voter. They wait.
+                    showWaitingView("Waiting for the voter...", "The voter is choosing the best answer.");
+                }
+            }
+            // --- END BUG FIX ---
+
+            if (data === "voter") {
+                if (voter) {
+                    deactivateVoterStatus();
+                }
+                else {
+                    displayVoterScreen();
+                }
+            }
+        }
+
+        async function setRequiredAnswers(data) {
+            if (voter && localGameState !== "voting-s") {
+                return;
+            }
+            requiredAnswers = parseInt(data);
+            requiredAnswersLabel.classList.remove("hidden");
+            // Update UI in case cards are already displayed
+            updateUIAfterSelection();
+        }
+
+        async function insertAnswerCards(data) {
+            try {
+                answerCards = JSON.parse(data);
+                let myAnswer = sessionStorage.getItem('answerCard');
+                if (myAnswer) {
+                    answerCards = answerCards.filter(item => item !== myAnswer);
+                }
+            } catch(e) {
+                console.error("Failed to parse answer cards:", e, data);
+            }
+        }
+
+        // --- Card Carousel & Interaction ---
+
+        function deleteCards() {
+            cardsInner.innerHTML = ""; // Clear all cards
+        }
+
+        function createCard(title) {
+            const card = document.createElement("button");
+            card.className = "whiteCard flex-shrink-0 w-48 md:w-56 h-72 md:h-80 bg-white text-black p-4 rounded-xl shadow-lg font-semibold text-left text-lg md:text-xl transition-all duration-300 ease-out transform hover:scale-105 hover:-translate-y-2";
+            card.style.scrollSnapAlign = "center";
+            card.innerHTML = title; // Use innerHTML to render line breaks if any
+
+            card.addEventListener("click", function() {
+                const isSelected = card.classList.contains("selected-card");
+                // Determine the limit
+                // --- BUG FIX: Check for 'voting-m' as well ---
+                let limit = (localGameState === 'voting-s' || localGameState === 'voting-m') ? 1 : (requiredAnswers > 0 ? requiredAnswers : 0);
+
+                if (isSelected) {
+                    unselectCard(card, title);
+                } else if (limit > 0 && playerCards.length < limit) { // Only select if limit is set and we are under it
+                    selectCard(card, title);
+                }
+                updateUIAfterSelection();
+            });
+            return card;
+        }
+
+        function selectCard(card, title) {
+            card.classList.add("selected-card");
+            playerCards.push(title);
+        }
+
+        function unselectCard(card, title) {
+            card.classList.remove("selected-card");
+            const cardIndex = playerCards.indexOf(title);
+            if (cardIndex !== -1) {
+                playerCards.splice(cardIndex, 1);
+            }
+        }
+
+        function updateUIAfterSelection() {
+            const allCards = document.querySelectorAll("button.whiteCard");
+            
+            // Determine the effective limit
+            // --- BUG FIX: Check for 'voting-m' as well ---
+            let limit = (localGameState === 'voting-s' || localGameState === 'voting-m') ? 1 : (requiredAnswers > 0 ? requiredAnswers : 0);
+
+            if (limit === 0) {
+                // Game hasn't told us how many to pick.
+                allCards.forEach(btn => {
+                    btn.style.opacity = "1";
+                    btn.style.pointerEvents = "auto"; // Ensure cards are clickable
+                });
+                submitContainer.classList.add("hidden");
+                requiredAnswersLabel.textContent = `Cards Required: ...`; // Waiting for server
+                return; // Exit early
+            }
+            
+            if (playerCards.length >= limit) {
+                allCards.forEach(btn => {
+                    if (!btn.classList.contains("selected-card")) {
+                        btn.style.opacity = "0.5";
+                        btn.style.pointerEvents = "none";
+                    }
+                });
+                
+                // Only show submit if we are *exactly* at the limit
+                if (playerCards.length === limit) {
+                     submitContainer.classList.remove("hidden");
+                     // --- BUG FIX: Check for 'voting-m' as well ---
+                     if (localGameState === "voting-s" || localGameState === "voting-m") {
+                         submitCardsButton.textContent = "Submit Vote";
+                     } else {
+                         submitCardsButton.textContent = playerCards.length === 1 ? "Submit Card" : "Submit Cards";
+                     }
+                } else {
+                     submitContainer.classList.add("hidden");
+                }
+               
+            } else { // We are *under* the limit
+                allCards.forEach(btn => {
+                    btn.style.opacity = "1";
+                    btn.style.pointerEvents = "auto";
+                });
+                submitContainer.classList.add("hidden");
+            }
+            
+            // Update required answers label
+            // --- BUG FIX: Add case for 'voting-m' ---
+            if (localGameState === "voting-s") {
+                requiredAnswersLabel.textContent = "Choose the winner!";
+            } else if (localGameState === "voting-m") {
+                requiredAnswersLabel.textContent = "Vote for your favorite!";
+            } else {
+                 requiredAnswersLabel.textContent = `Cards Required: ${playerCards.length} / ${limit}`;
+            }
+        }
+
+        function displayWhiteCards(whiteCardsList) {
+            deleteCards();
+            showPlayingView();
+
+            if (!whiteCardsList || whiteCardsList.length === 0) {
+                cardsInner.innerHTML = `<p class="text-xl text-center w-full">No cards to display.</p>`;
+                return;
+            }
+
+            whiteCardsList.forEach(cardTitle => {
+                const card = createCard(cardTitle);
+                cardsInner.appendChild(card);
+            });
+            
+            // Reset selection and UI
+            playerCards = [];
+            updateUIAfterSelection();
+        }
+
+        // --- New Drag-to-Scroll Logic ---
+        let isDragging = false;
+        let startX;
+        let scrollLeft;
+
+        function startDrag(e) {
+            isDragging = true;
+            cardsWrapper.classList.add("active:cursor-grabbing");
+            startX = (e.pageX || e.touches[0].pageX) - cardsWrapper.offsetLeft;
+            scrollLeft = cardsWrapper.scrollLeft;
+        }
+
+        function endDrag() {
+            isDragging = false;
+            cardsWrapper.classList.remove("active:cursor-grabbing");
+        }
+
+        function onDrag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = (e.pageX || e.touches[0].pageX) - cardsWrapper.offsetLeft;
+            const walk = (x - startX) * 2; // *2 for faster scrolling
+            cardsWrapper.scrollLeft = scrollLeft - walk;
+        }
+
+        cardsWrapper.addEventListener("mousedown", startDrag);
+        cardsWrapper.addEventListener("touchstart", startDrag, { passive: true }); // Keep passive true for start
+
+        cardsWrapper.addEventListener("mouseleave", endDrag);
+        cardsWrapper.addEventListener("mouseup", endDrag);
+        cardsWrapper.addEventListener("touchend", endDrag);
+
+        cardsWrapper.addEventListener("mousemove", onDrag);
+        cardsWrapper.addEventListener("touchmove", onDrag); // Remove passive: true to allow preventDefault
+
+
+        // --- Submit Button Logic ---
+        submitCardsButton.addEventListener("click", function() {
+            // Remove selected cards from the local whiteCards array
+            whiteCards = whiteCards.filter(item => !playerCards.includes(item));
+            
+            let submission = playerCards.join("|");
+
+            if (localGameState === "playing") {
+                sendMessageToServer({ command: "submitCards" }, submission);
+                sessionStorage.setItem('answerCard', submission);
+                requestNewWhiteCards(requiredAnswers);
+            }
+            if (localGameState === "voting-m" || localGameState === "voting-s") {
+                sendMessageToServer({ command: "submitVote" }, submission);
+            }
+
+            // Reset UI
+            playerCards = [];
+            deleteCards();
+            requiredAnswers = 0; // Reset to 0 to wait for server
+            submitContainer.classList.add("hidden");
+            
+            showWaitingView("Waiting for other players...", "You can relax for a bit!");
+        });
+        
+        // --- Form Event Listener ---
+        joinGameForm.addEventListener("submit", joinGame);
+
+    </script>
+</body>
+</html>
+
+
+
