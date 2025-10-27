@@ -83,10 +83,10 @@ This is an early public release — expect a few bugs along the way:
 ### 🎮 Host
 
 1. Download the release package from the [Releases](../../releases) page.  
-2. Install `Devices Against Humanity Setup.exe` (Windows)
+2. Install `Devices Against Humanity Setup.exe` (Windows), `Devices Against Humanity.dmg` (macOS)
 3. The app will display a **join QR code** and **game code**.  
 
-(I am working on packaging the host for macOS and Linux)
+(I am working on packaging the host for Linux)
 
 ### 🌍 Players
 
